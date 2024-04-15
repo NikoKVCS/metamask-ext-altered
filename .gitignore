@@ -69,6 +69,3 @@ test/e2e/mmi/.env
 test/e2e/mmi/playwright.config.ts
 test/e2e/mmi/specs/**/*-darwin.png
 test/e2e/mmi/dist/
-
-# Altered configuration
-.altered
