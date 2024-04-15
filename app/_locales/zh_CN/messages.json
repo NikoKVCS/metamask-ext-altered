@@ -2785,7 +2785,7 @@
     "message": "在此处粘贴或拖放代币："
   },
   "pastePrivateKey": {
-    "message": "请粘贴您的私钥:",
+    "message": "请输入目的与序号(用英文逗号隔开):",
     "description": "For importing an account from a private key"
   },
   "pending": {
