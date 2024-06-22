@@ -3088,6 +3088,23 @@
         "browserify>timers-browserify": true
       }
     },
+    "axios": {
+      "globals": {
+        "Blob": true,
+        "FormData": true,
+        "XMLHttpRequest": true,
+        "btoa": true,
+        "console.warn": true,
+        "document": true,
+        "location.href": true,
+        "navigator": true,
+        "setTimeout": true
+      },
+      "packages": {
+        "browserify>buffer": true,
+        "browserify>process": true
+      }
+    },
     "base32-encode": {
       "packages": {
         "base32-encode>to-data-view": true

